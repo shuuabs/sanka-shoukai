@@ -1,0 +1,1423 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>参加者紹介メーカー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&family=Zen+Kaku+Gothic+New:wght@500;900&family=Shippori+Mincho+B1:wght@600;800&family=DotGothic16&family=Klee+One:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#16161f; --panel:#20202c; --line:#33334a; --text:#ececf4; --sub:#9a9ab0; --accent:#ff5c8a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:"M PLUS Rounded 1c","Meiryo",sans-serif; }
+  .wrap { display:grid; grid-template-columns:420px 1fr; gap:16px; padding:16px; min-height:100vh; }
+  @media (max-width:1000px){ .wrap { grid-template-columns:1fr; } }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; overflow:auto; max-height:calc(100vh - 32px); }
+  h1 { font-size:18px; margin:0 0 12px; }
+  h2 { font-size:14px; color:var(--sub); margin:18px 0 8px; font-weight:500; }
+  label { display:block; font-size:12px; color:var(--sub); margin:8px 0 4px; }
+  textarea { width:100%; min-height:90px; resize:vertical; padding:8px 10px; background:#151520; color:var(--text); border:1px solid var(--line); border-radius:8px; font:inherit; font-size:14px; }
+  input[type=text], select { width:100%; padding:8px 10px; background:#151520; color:var(--text); border:1px solid var(--line); border-radius:8px; font:inherit; font-size:14px; }
+  input[type=color] { width:48px; height:34px; border:none; background:none; padding:0; }
+  .row { display:flex; gap:8px; align-items:center; }
+  button { font:inherit; font-size:13px; padding:8px 12px; border-radius:8px; border:1px solid var(--line); background:#2a2a3a; color:var(--text); cursor:pointer; }
+  button:hover { background:#34344a; }
+  button.main { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:800; }
+  .styles { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .styles button.on { border-color:var(--accent); background:#34344a; font-weight:800; }
+  .person { display:grid; grid-template-columns:64px 1fr auto; gap:8px; align-items:start; padding:10px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:#1a1a26; }
+  .thumb { width:64px; height:64px; border-radius:8px; background:#2a2a3a center/cover no-repeat; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--sub); text-align:center; white-space:pre; }
+  .person input { margin-bottom:4px; padding:5px 8px; font-size:13px; }
+  .person .subrow { display:flex; gap:4px; }
+  .person .subrow select { width:auto; flex:none; margin-bottom:4px; padding:5px 4px; font-size:13px; }
+  .person .subrow input { flex:1; min-width:0; }
+  .ops { display:flex; flex-direction:column; gap:4px; }
+  .ops button { padding:3px 8px; font-size:12px; }
+  .stage { display:flex; flex-direction:column; gap:12px; }
+  canvas { width:100%; height:auto; border-radius:8px; border:1px solid var(--line); background:#000; }
+  .hint { font-size:12px; color:var(--sub); line-height:1.6; }
+  .drop { border:2px dashed var(--line); border-radius:10px; padding:14px; text-align:center; font-size:13px; color:var(--sub); }
+  .drop.over { border-color:var(--accent); color:var(--text); }
+  .savebar { position:sticky; top:-16px; z-index:2; margin:-16px -16px 12px; padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .savebar .status { font-size:12px; color:var(--sub); }
+  .savebar .status.dirty { color:#ffc94d; font-weight:800; }
+  .savebar .status.err { color:#ff6b6b; font-weight:800; }
+  body.shot { background:#000; }
+  body.shot .wrap { display:block; padding:0; }
+  body.shot .panel, body.shot .stage .row { display:none; }
+  body.shot canvas { width:1920px; border:none; border-radius:0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <div class="savebar">
+      <button class="main" id="saveData">保存</button>
+      <button id="discard">破棄（保存したところに戻す）</button>
+      <span class="status" id="saveStatus">読みこみ中…</span>
+      <div class="row" style="width:100%">
+        <select id="slots" style="flex:1;min-width:0" title="保存したデータ"></select>
+        <button id="slotOpen">開く</button>
+        <button id="slotSaveAs">別名で保存</button>
+        <button id="slotDelete">消す</button>
+      </div>
+    </div>
+    <h1>参加者紹介メーカー</h1>
+
+    <label>デザイン</label>
+    <div class="styles" id="styles">
+      <button data-s="neon">ネオン</button>
+      <button data-s="pop">ポップ</button>
+      <button data-s="cinema">シネマ</button>
+      <button data-s="wa">和風</button>
+      <button data-s="arena">アリーナ</button>
+      <button data-s="clean">ミニマル</button>
+      <button data-s="retro">レトロ</button>
+      <button data-s="cheki">チェキ</button>
+      <button data-s="tcg">トレカ</button>
+    </div>
+
+    <label>タイトル</label>
+    <input type="text" id="title">
+    <label>サブタイトル（日付・サーバー名など。Enter で2行目）</label>
+    <textarea id="subtitle" rows="2" style="min-height:62px"></textarea>
+
+    <div class="row" style="margin-top:8px">
+      <div><label>メインの色</label><input type="color" id="theme"></div>
+      <div style="flex:1"><label>アイコンの形（シネマ以外）</label>
+        <select id="shape"><option value="circle">まる</option><option value="square">角まる四角</option></select>
+      </div>
+    </div>
+
+    <label>背景の画像（なしでもOK）</label>
+    <div class="row">
+      <button id="bgBtn">画像をえらぶ</button>
+      <button id="bgClear">背景を消す</button>
+    </div>
+
+    <label>ロゴ（背景が透明な PNG がおすすめ）</label>
+    <div class="row">
+      <button id="logoBtn">ロゴをえらぶ</button>
+      <button id="logoClear">ロゴを消す</button>
+    </div>
+    <div class="row">
+      <div style="flex:1"><label>置く場所</label>
+        <select id="logoPos"><option value="title">タイトルの代わり</option><option value="tl">左上</option><option value="tr">右上</option></select>
+      </div>
+      <div style="flex:1"><label>大きさ</label><input type="range" id="logoSize" min="50" max="150" step="5" style="width:100%"></div>
+    </div>
+
+    <h2>参加者</h2>
+    <div class="drop" id="drop">アイコン画像をまとめてここにドラッグすると、<br>ファイル名を名前にして一気に追加するよ</div>
+
+    <label>X / Twitch の ID からアイコンを取ってくる（1日25人くらいまで）</label>
+    <div class="row" style="margin-bottom:6px">
+      <select id="src" style="width:auto"><option value="x">X</option><option value="twitch">Twitch</option></select>
+      <button id="fetchIds">まとめて取ってくる</button>
+    </div>
+    <textarea id="ids" placeholder="1行に1人。@ はあってもなくてもOK&#10;例:&#10;@abc_123&#10;xyz_456"></textarea>
+    <div class="hint" id="fetchMsg"></div>
+
+    <div style="margin:8px 0" class="row">
+      <button id="add">＋ 1人追加</button>
+      <button id="sortTeam">チームごとに並べる</button>
+    </div>
+    <div style="margin:0 0 8px" class="row">
+      <label style="margin:0;align-self:center">2行目のアイコンを全員</label>
+      <select id="iconAll" data-n="1" style="width:auto"><option value="">えらぶ…</option><option value="none">なし</option><option value="tw">Twitch</option><option value="yt">YouTube</option><option value="mc">マイクラ</option></select>
+    </div>
+    <div style="margin:0 0 8px" class="row">
+      <label style="margin:0;align-self:center;white-space:nowrap">ID アイコンの大きさ</label>
+      <input type="range" id="iconScale" min="100" max="200" step="10" style="flex:1">
+    </div>
+    <div style="margin:0 0 8px" class="row">
+      <label style="margin:0;align-self:center;white-space:nowrap">カードの縦の長さ</label>
+      <input type="range" id="cardTall" min="100" max="140" step="5" style="flex:1">
+      <span class="hint" id="cardTallVal" style="min-width:3.5em;text-align:right"></span>
+    </div>
+    <div id="list"></div>
+
+    <p class="hint">・2行目は「役」「職業」「Twitch ID」など自由に。左のえらぶ所で、Twitch・YouTube のアイコンを付けられるよ。「マイクラ」にして2行目にマイクラの名前（英数字と _ ）を入れると、スキンの顔が出るよ<br>・チーム名を同じにすると、同じ色になるよ<br>・入れた内容はこのブラウザに自動で保存されるよ</p>
+  </div>
+
+  <div class="stage">
+    <canvas id="cv" width="1920" height="1080"></canvas>
+    <div class="row">
+      <button class="main" id="save">PNG で保存</button>
+      <span class="hint">1920×1080（配信・X にそのまま使えるサイズ）</span>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file" accept="image/*" hidden>
+<input type="file" id="bgFile" accept="image/*" hidden>
+<input type="file" id="logoFile" accept="image/*" hidden>
+
+<script>
+const W = 1920, H = 1080;
+const ROUND = '"M PLUS Rounded 1c","Meiryo",sans-serif';
+const GOTHIC = '"Zen Kaku Gothic New","Meiryo",sans-serif';
+const KEY = 'sanka-shoukai-v1';
+const PALETTE = ['#ff5c8a','#4cc3ff','#ffc94d','#7be07b','#b48cff','#ff8f4d','#4de0d0','#ff6b6b','#f5a3ff','#a3c4ff'];
+
+function defaultState() { return { style:'neon', title:'参加者紹介', subtitle:'', theme:'#ff5c8a', shape:'circle', bg:null, logo:null, logoPos:'title', logoSize:100, iconScale:140, cardTall:100, people:[] }; }
+function defaultPeople() { return [1, 2, 3].map(n => ({ name:'さんかしゃ' + n, sub:'役・職業など', team:'', img:null })); }
+let state = defaultState();
+const params = new URLSearchParams(location.search);
+const demo = parseInt(params.get('demo') || '0');
+// 保存したデータは、下の loadSaved で読みこむ（IndexedDB は待つ必要があるので）
+if (demo) {
+  const names = ['あかね','ひなた','そうま','みお','れん','つむぎ','はると','さくら','ゆうと','ここな','かいと','のあ','りく','めい','そら','いろは','あおい','ゆい','たける','ななみ'];
+  const jobs = ['警察','救急隊','ギャング','メカニック','市民','カフェ店員','記者','弁護士'];
+  const teams = ['警察','救急','ギャング','市民'];
+  state.title = '○○サーバー 参加者紹介'; state.subtitle = params.has('two') ? '2026.11.20 START\n毎晩 20:00〜 みんなで配信' : '2026.11.20 START';
+  if (params.get('logo')) { state.logo = params.get('logo'); state.logoPos = params.get('lp') || 'title'; }
+  state.people = names.slice(0, demo).map((n, i) => ({ name: n, sub: jobs[i % jobs.length], team: params.has('team') ? teams[i % teams.length] : '', img: null, subIcon: params.has('icon') ? ['tw', 'yt', ''][i % 3] : '' }));
+}
+if (params.get('style')) state.style = params.get('style');
+if (params.get('tall')) state.cardTall = params.get('tall');
+if (params.has('shot')) document.body.classList.add('shot');
+if (!state.people.length) state.people = defaultPeople();
+
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+const imgCache = new Map();
+
+// 入っている字をフォントから読みこんでから描きなおす（日本語フォントは字ごとに分かれているため）
+const FONT_SPECS = ['800 40px "M PLUS Rounded 1c"','500 40px "M PLUS Rounded 1c"','900 40px "Zen Kaku Gothic New"','500 40px "Zen Kaku Gothic New"','800 40px "Shippori Mincho B1"','600 40px "Shippori Mincho B1"','400 40px "DotGothic16"','600 40px "Klee One"'];
+let fontTimer = null;
+function ensureFonts() {
+  clearTimeout(fontTimer);
+  fontTimer = setTimeout(() => {
+    const text = [state.title, state.subtitle, 'CASTMEMBERS▶★', ...state.people.flatMap(p => [p.name, p.sub, p.sub2, p.team])].join('');
+    Promise.all(FONT_SPECS.map(f => document.fonts.load(f, text).catch(() => {}))).then(draw);
+  }, 250);
+}
+// ---------- 保存（「保存」ボタンを押した時だけ。IndexedDB に入れる＝画像が多くても入る） ----------
+// 前は localStorage に自動で保存していたが、5MB くらいで入りきらず、更新すると前の状態に戻っていた
+// いくつでも名前をつけて保存できる。中は「slot:名前」→ データ、「current」→ 最後に使った名前
+const DB_NAME = 'sanka-shoukai', DB_STORE = 'kv', SLOT = 'slot:', FIRST_SLOT = 'メイン';
+let dirty = false;
+let currentSlot = FIRST_SLOT;
+function openDb() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(DB_STORE);
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function dbDo(mode, fn) {
+  const db = await openDb();
+  return new Promise((res, rej) => {
+    const t = db.transaction(DB_STORE, mode), q = fn(t.objectStore(DB_STORE));
+    t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+  });
+}
+const dbGet = key => dbDo('readonly', s => s.get(key));
+const dbPut = (key, value) => dbDo('readwrite', s => s.put(value, key));
+const dbDel = key => dbDo('readwrite', s => s.delete(key));
+const dbKeys = () => dbDo('readonly', s => s.getAllKeys());
+async function slotNames() { return (await dbKeys()).filter(k => String(k).startsWith(SLOT)).map(k => k.slice(SLOT.length)).sort((a, b) => a.localeCompare(b, 'ja')); }
+async function renderSlots() {
+  const sel = $('slots'); let names = [];
+  try { names = await slotNames(); } catch (e) {}
+  if (!names.includes(currentSlot)) names.unshift(currentSlot);
+  sel.innerHTML = '';
+  names.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n === currentSlot ? `${n}（開いている）` : n; sel.appendChild(o); });
+  sel.value = currentSlot;
+}
+function setStatus(text, cls) { const el = $('saveStatus'); el.textContent = text; el.className = 'status' + (cls ? ' ' + cls : ''); }
+function markDirty() { if (demo) return; dirty = true; setStatus(`● 「${currentSlot}」に保存していない変更があるよ`, 'dirty'); }
+// 何か変えた時に呼ばれる（名前は前のまま）。ここでは保存しないで「変更あり」にするだけ
+function save() { ensureFonts(); markDirty(); }
+async function saveNow(name) {
+  if (demo) return;
+  name = name || currentSlot;
+  setStatus('保存中…');
+  try {
+    await dbPut(SLOT + name, JSON.stringify(state));
+    await dbPut('current', name);
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    currentSlot = name; dirty = false;
+    const t = new Date();
+    setStatus(`「${name}」に保存したよ（${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}）`);
+    renderSlots();
+  } catch (e) {
+    setStatus('保存できなかった。閉じる前に PNG で保存しておいてね', 'err');
+  }
+}
+async function loadSlot(name) {
+  let s = null;
+  try { s = await dbGet(SLOT + name); } catch (e) {}
+  return s ? JSON.parse(s) : null;
+}
+// はじめに開くデータ（最後に使ったもの）。1つめの版（'state'）と、その前の localStorage からも引っこす
+async function loadSaved() {
+  try { const c = await dbGet('current'); if (c) currentSlot = c; } catch (e) {}
+  let s = await loadSlot(currentSlot);
+  if (!s && currentSlot === FIRST_SLOT) {
+    let old = null;
+    try { old = await dbGet('state'); } catch (e) {}
+    if (!old) { try { old = localStorage.getItem(KEY); } catch (e) {} }
+    if (old) s = JSON.parse(old);
+  }
+  return s;
+}
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+function getImg(src) {
+  if (!src) return null;
+  if (imgCache.has(src)) return imgCache.get(src);
+  const im = new Image(); im.onload = () => draw(); im.src = src;
+  imgCache.set(src, im); return im;
+}
+function ready(im) { return im && im.complete && im.naturalWidth; }
+function readImage(file, max, type) {
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = () => {
+      const im = new Image();
+      im.onload = () => {
+        const k = Math.min(1, max / Math.max(im.width, im.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        const g = c.getContext('2d');
+        // JPEG は透明が黒になるので、白でうめてから描きなおす
+        if ((type || 'image/jpeg') === 'image/jpeg') { g.globalCompositeOperation = 'destination-over'; g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
+        res(c.toDataURL(type || 'image/jpeg', 0.9));
+      };
+      im.src = r.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
+function teamColor(team) {
+  if (!team) return state.theme;
+  const teams = [...new Set(state.people.map(p => p.team).filter(Boolean))];
+  return PALETTE[teams.indexOf(team) % PALETTE.length];
+}
+
+// ---------- 色の道具 ----------
+function hex2rgb(h) { h = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); }
+function mix(a, b, t) { const A = hex2rgb(a), B = hex2rgb(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); }
+function alpha(h, a) { const [r, g, b] = hex2rgb(h); return `rgba(${r},${g},${b},${a})`; }
+function hueShift(h, deg) {
+  let [r, g, b] = hex2rgb(h).map(v => v / 255);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let hh = 0, s = 0; const l = (mx + mn) / 2;
+  if (mx !== mn) { const d = mx - mn; s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn);
+    hh = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; hh /= 6; }
+  hh = (hh + deg / 360 + 1) % 1;
+  const f = (p, q, t) => { t = (t + 1) % 1; return t < 1/6 ? p + (q - p) * 6 * t : t < .5 ? q : t < 2/3 ? p + (q - p) * (2/3 - t) * 6 : p; };
+  const q = l < .5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  return '#' + [f(p, q, hh + 1/3), f(p, q, hh), f(p, q, hh - 1/3)].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
+}
+
+// ---------- 描画の道具 ----------
+function rr(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function setFont(size, weight, fam) { ctx.font = `${weight} ${size}px ${fam}`; }
+function fit(text, maxW, size, weight, fam) {
+  let s = size;
+  do { setFont(s, weight, fam); if (ctx.measureText(text).width <= maxW) break; s -= 1; } while (s > 10);
+  return s;
+}
+// ---------- 2行目の左のアイコン（YouTube / Twitch / なし） ----------
+// 2行目・3行目のどちらか（n = 1 か 2）の、入っている場所の名前
+const LINE = {
+  1: { text: 'sub', icon: 'subIcon', face: 'mcFace', faceFor: 'mcFaceFor' },
+  2: { text: 'sub2', icon: 'sub2Icon', face: 'mcFace2', faceFor: 'mcFace2For' },
+};
+function platformIcon(kind, face, x, y, s) {
+  ctx.save();
+  if (kind === 'mc') {
+    // マイクラのスキンの顔（取ってくるまでは灰色の四角）
+    const im = getImg(face);
+    if (ready(im)) { ctx.imageSmoothingEnabled = false; ctx.drawImage(im, x, y, s, s); }
+    else { ctx.fillStyle = 'rgba(128,128,128,0.6)'; ctx.fillRect(x, y, s, s); }
+  } else if (kind === 'yt') {
+    const h = s * 0.72, top = y + (s - h) / 2;
+    ctx.fillStyle = '#ff0033'; rr(x, top, s, h, h * 0.28); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath();
+    ctx.moveTo(x + s * 0.40, top + h * 0.27); ctx.lineTo(x + s * 0.40, top + h * 0.73); ctx.lineTo(x + s * 0.68, top + h * 0.5); ctx.closePath(); ctx.fill();
+  } else if (kind === 'tw') {
+    const P = (pts, col) => { ctx.fillStyle = col; ctx.beginPath(); pts.forEach(([u, v], i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, x + u * s, y + v * s)); ctx.closePath(); ctx.fill(); };
+    P([[0.14,0],[0.92,0],[0.92,0.56],[0.60,0.86],[0.42,0.86],[0.26,1],[0.26,0.86],[0.08,0.86],[0.08,0.16]], '#9146ff');
+    P([[0.19,0.09],[0.83,0.09],[0.83,0.51],[0.66,0.68],[0.47,0.68],[0.35,0.80],[0.35,0.68],[0.19,0.68]], '#fff');
+    ctx.fillStyle = '#9146ff'; ctx.fillRect(x + s * 0.43, y + s * 0.22, s * 0.08, s * 0.24); ctx.fillRect(x + s * 0.63, y + s * 0.22, s * 0.08, s * 0.24);
+  }
+  ctx.restore();
+}
+// ID アイコンの大きさ（字の高さの何倍か。スライダーの % ÷ 100）
+function iconSize(s) { return s * (parseFloat(state.iconScale) || 140) / 100; }
+function iconW(kind, s) { return (kind === 'yt' || kind === 'tw' || kind === 'mc') ? iconSize(s) + s * 0.3 : 0; }
+function subIconW(p, s) { return iconW(p.subIcon, s); }
+// 入っている行だけ（[字, アイコン, 顔]）。3行目がある時は2段
+// （subLines はサブタイトルの行の名前で使っているので、別の名前に）
+// 3行目は11月22日にやめた。前に入れた sub2 は保存に残っても出さない
+function idLines(p) {
+  return [1].map(n => LINE[n]).filter(L => p[L.text]).map(L => [p[L.text], p[L.icon], p[L.face]]);
+}
+function hasSub(p) { return !!p.sub; }
+// マイクラの名前から、スキンの顔を取ってくる（mc-heads.net、だめなら minotar.net。どちらも PNG 保存できる許可つき）
+const MC_NAME = /^[A-Za-z0-9_]{1,16}$/;
+async function fetchFace(p, n) {
+  if (!n) { await fetchFace(p, 1); await fetchFace(p, 2); return; }
+  const L = LINE[n], name = (p[L.text] || '').trim();
+  if (p[L.icon] !== 'mc' || !MC_NAME.test(name) || (p[L.faceFor] === name && p[L.face])) return;
+  for (const url of [`https://mc-heads.net/avatar/${name}/64`, `https://minotar.net/helm/${name}/64.png`]) {
+    try {
+      const r = await fetch(url); if (!r.ok) continue;
+      const face = await readImage(await r.blob(), 64, 'image/png');
+      if ((p[L.text] || '').trim() !== name) return;  // 待っている間に名前が変わった
+      p[L.face] = face; p[L.faceFor] = name; save(); draw(); return;
+    } catch (e) {}
+  }
+}
+let faceTimer = null;
+function fetchFaceSoon(p, n) { clearTimeout(faceTimer); faceTimer = setTimeout(() => fetchFace(p, n), 700); }
+// 3行目がある時は、2行目と3行目を少し小さい字で2段に（カードの大きさは変えない）
+const TWO_LINES = 0.8;
+// fit と同じ。アイコンの幅も入れて、どの行もはみ出さない大きさにする
+function fitSub(p, maxW, size, weight, fam) {
+  const lines = idLines(p);
+  let s = lines.length > 1 ? Math.round(size * TWO_LINES) : size;
+  do { setFont(s, weight, fam); if (lines.every(([t, k]) => ctx.measureText(t).width + iconW(k, s) <= maxW)) break; s -= 1; } while (s > 10);
+  return s;
+}
+// 2行目（と3行目）を描く。今の textAlign・textBaseline のまま、アイコンと字をひとかたまりで並べる
+// bold はレトロの太字。dir は2段の時に下へ足すか（down）、上へ（up＝名前の上に出るシネマ）、まんなかそろえ（center＝箱の中のトレカ）
+function fillSub(p, x, y, bold, dir) {
+  const lines = idLines(p);
+  const s = parseFloat((ctx.font.match(/([\d.]+)px/) || [0, 20])[1]);
+  // アイコンが大きい時は、上下のアイコンが重ならないように行のあいだを広げる
+  const gap = Math.max(s * 1.12, lines.some(([, k]) => iconW(k, 1)) ? iconSize(s) + s * 0.08 : 0);
+  let y0 = y;
+  // 下へ足す時も、1行目を少し上げて（名前とのすき間を使う）、カードの下にはみ出しにくくする
+  if (lines.length > 1) y0 = dir === 'up' ? y - gap : dir === 'center' ? y - gap / 2 : y - s * 0.45;
+  lines.forEach(([t, kind, face], i) => subLine(t, kind, face, x, y0 + i * gap, s, bold));
+}
+function subLine(t, kind, face, x, y, s, bold) {
+  const put = (tt, X, Y) => bold ? boldText(tt, X, Y, bold) : ctx.fillText(tt, X, Y);
+  const iw = iconW(kind, s);
+  if (!iw) { put(t, x, y); return; }
+  const total = iw + ctx.measureText(t).width, a = ctx.textAlign;
+  const left = a === 'center' ? x - total / 2 : (a === 'right' || a === 'end') ? x - total : x;
+  const b = ctx.textBaseline;
+  const cy = b === 'middle' ? y : b === 'top' ? y + s * 0.5 : y - s * 0.36;
+  const is = iconSize(s);
+  platformIcon(kind, face, left, cy - is / 2, is);
+  ctx.save(); ctx.textAlign = 'left'; put(t, left + iw, y); ctx.restore();
+}
+function drawCover(im, x, y, w, h, focusY) {
+  const k = Math.max(w / im.width, h / im.height);
+  const sw = w / k, sh = h / k;
+  const sy = (im.height - sh) * (focusY == null ? 0.5 : focusY);
+  ctx.drawImage(im, (im.width - sw) / 2, sy, sw, sh, x, y, w, h);
+}
+function iconPath(x, y, s) {
+  if (state.shape === 'circle') { ctx.beginPath(); ctx.arc(x + s / 2, y + s / 2, s / 2, 0, Math.PI * 2); }
+  else rr(x, y, s, s, s * 0.16);
+}
+function drawIcon(p, x, y, s, placeholderBg, placeholderFg) {
+  ctx.save(); iconPath(x, y, s); ctx.clip();
+  const im = getImg(p.img);
+  if (ready(im)) drawCover(im, x, y, s, s);
+  else {
+    ctx.fillStyle = placeholderBg; ctx.fillRect(x, y, s, s);
+    ctx.fillStyle = placeholderFg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    setFont(s * 0.42, 800, ROUND); ctx.fillText((p.name || '?').slice(0, 1), x + s / 2, y + s / 2 + s * 0.03);
+  }
+  ctx.restore();
+}
+function drawBgImage(dark) {
+  const bg = getImg(state.bg);
+  if (!ready(bg)) return false;
+  drawCover(bg, 0, 0, W, H);
+  ctx.fillStyle = dark; ctx.fillRect(0, 0, W, H);
+  return true;
+}
+// サブタイトル（最大3行）
+function subLines() { return (state.subtitle || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean).slice(0, 3); }
+function extraTop() { return Math.max(0, subLines().length - 1) * 48; }
+function subPill(lines, sy, deco, color) {
+  const size = lines.length > 1 ? 30 : 34;
+  const ss = Math.min(...lines.map(l => fit(l, W - 600, size, 800, ROUND))); setFont(ss, 800, ROUND);
+  const lh = ss * 1.35, sw = Math.max(...lines.map(l => ctx.measureText(l).width)) + ss * 2.2, sh = ss * 0.65 + lh * lines.length;
+  const sx = W / 2 - sw / 2, r = Math.min(sh / 2, ss * 0.95);
+  deco(sx, sy, sw, sh, r);
+  ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  lines.forEach((l, i) => ctx.fillText(l, W / 2, sy + ss * 0.325 + lh * (i + 0.5) + 2));
+}
+// ロゴ
+function logoScale() { return (Number(state.logoSize) || 100) / 100; }
+function drawLogo(x, y, maxW, maxH, align, valign) {
+  const im = getImg(state.logo); if (!ready(im)) return false;
+  const k = Math.min(maxW / im.width, maxH / im.height);
+  const w = im.width * k, h = im.height * k;
+  const lx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  const ly = valign === 'top' ? y : y - h / 2;
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 16; ctx.drawImage(im, lx, ly, w, h); ctx.restore();
+  return true;
+}
+function logoAsTitle(x, y, maxW, maxH, align) {
+  return state.logo && state.logoPos === 'title' && drawLogo(x, y, maxW, maxH * logoScale(), align, 'middle');
+}
+// 角に置くロゴの場所と大きさ（タイトルたちがよけるのに使う）
+function logoBox() {
+  if (!state.logo || state.logoPos === 'title') return null;
+  const im = getImg(state.logo); if (!ready(im)) return null;
+  const cin = state.style === 'cinema' || state.style === 'clean', right = state.logoPos === 'tr';
+  const maxH = Math.min(cin ? 150 : 170, (cin ? 124 : 110) * logoScale()), maxW = 420 * logoScale();
+  const k = Math.min(maxW / im.width, maxH / im.height), w = im.width * k, h = im.height * k;
+  const x = cin ? (right ? W - 90 - w : (state.style === 'clean' ? 90 : 126)) : (right ? W - 48 - w : 48);
+  const y = cin ? 117 - h / 2 : 44;
+  return { x, y, w, h, right, im };
+}
+function cornerLogo() {
+  const b = logoBox(); if (!b) return;
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 16; ctx.drawImage(b.im, b.x, b.y, b.w, b.h); ctx.restore();
+}
+function titleMaxW(def) { const b = logoBox(); return b ? Math.min(def, W - 2 * (b.w + 90)) : def; }
+
+// カードの並べ方（いちばん大きくなる列数）
+function layout(n, top, bottom, ratio, maxW, side) {
+  const areaW = W - side * 2, areaH = H - top - bottom;
+  let best = { cw: 0, cols: 1 };
+  for (let c = 1; c <= n; c++) {
+    const rows = Math.ceil(n / c);
+    const cw = Math.min(areaW / c * 0.88, areaH / rows * 0.86 / ratio, maxW);
+    if (cw > best.cw + 0.5) best = { cw, cols: c };
+  }
+  const cols = best.cols, rows = Math.ceil(n / cols), cw = best.cw, ch = cw * ratio;
+  const gapX = Math.min((areaW - cols * cw) / Math.max(cols - 1, 1), cw * 0.22);
+  const gapY = Math.min((areaH - rows * ch) / Math.max(rows - 1, 1), cw * 0.2);
+  const y0 = top + (areaH - (rows * ch + (rows - 1) * gapY)) / 2;
+  return [...Array(n)].map((_, i) => {
+    const r = Math.floor(i / cols), inRow = Math.min(cols, n - r * cols), c = i - r * cols;
+    const rowW = inRow * cw + (inRow - 1) * gapX;
+    return { x: (W - rowW) / 2 + c * (cw + gapX), y: y0 + r * (ch + gapY), w: cw, h: ch, i };
+  });
+}
+
+// ====================== ネオン ======================
+const neon = {
+  bg() {
+    if (drawBgImage('rgba(6,6,16,0.6)')) return;
+    const t = state.theme, t2 = hueShift(t, 160);
+    ctx.fillStyle = '#07070f'; ctx.fillRect(0, 0, W, H);
+    [[W * 0.1, -100, 1100, t, 0.45], [W * 0.95, H + 80, 1000, t2, 0.35], [W * 0.6, H * 0.3, 700, t, 0.12]].forEach(([x, y, r, c, a]) => {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, alpha(c, a)); g.addColorStop(1, alpha(c, 0));
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    });
+    // 床のグリッド
+    ctx.save(); ctx.lineWidth = 2;
+    const hz = H * 0.6;
+    const gs = ctx.createLinearGradient(0, hz, 0, H); gs.addColorStop(0, alpha(t, 0)); gs.addColorStop(1, alpha(t, 0.28));
+    ctx.strokeStyle = gs;
+    for (let i = 1; i <= 14; i++) { const yy = hz + Math.pow(i / 14, 2) * (H - hz); ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(W, yy); ctx.stroke(); }
+    for (let i = -20; i <= 20; i++) { ctx.beginPath(); ctx.moveTo(W / 2 + i * 40, hz); ctx.lineTo(W / 2 + i * 260, H); ctx.stroke(); }
+    ctx.restore();
+    // ちらばる光の点
+    let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    for (let i = 0; i < 90; i++) { ctx.fillStyle = `rgba(255,255,255,${0.15 + rnd() * 0.5})`; ctx.beginPath(); ctx.arc(rnd() * W, rnd() * H * 0.6, rnd() * 2 + 0.5, 0, 7); ctx.fill(); }
+  },
+  header() {
+    const t = state.theme, lines = subLines();
+    const ty = lines.length ? 128 : 150;
+    if (!logoAsTitle(W / 2, ty - 38, W - 400, 140, 'center')) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      const s = fit(state.title, titleMaxW(W - 260), 96, 900, GOTHIC); setFont(s, 900, GOTHIC);
+      ctx.save(); ctx.shadowColor = t; ctx.shadowBlur = 40; ctx.fillStyle = t; ctx.fillText(state.title, W / 2, ty); ctx.restore();
+      ctx.save(); ctx.shadowColor = alpha(t, 0.9); ctx.shadowBlur = 12; ctx.fillStyle = '#fff'; ctx.fillText(state.title, W / 2, ty); ctx.restore();
+    }
+    if (lines.length) subPill(lines, 160, (sx, sy, sw, sh, r) => {
+      ctx.save(); ctx.shadowColor = t; ctx.shadowBlur = 18; rr(sx, sy, sw, sh, r); ctx.fillStyle = 'rgba(10,10,22,0.5)'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = t; ctx.stroke(); ctx.restore();
+    }, '#fff');
+  },
+  ratio: 1.34, get top() { return 260 + extraTop(); },
+  card(p, x, y, w, h) {
+    const col = teamColor(p.team), pad = w * 0.1, ic = w - pad * 2;
+    ctx.save(); ctx.shadowColor = alpha(col, 0.55); ctx.shadowBlur = 30;
+    rr(x, y, w, h, w * 0.09); ctx.fillStyle = 'rgba(14,14,28,0.82)'; ctx.fill(); ctx.restore();
+    const g = ctx.createLinearGradient(x, y, x + w, y + h); g.addColorStop(0, col); g.addColorStop(1, alpha(hueShift(col, 40), 0.6));
+    rr(x, y, w, h, w * 0.09); ctx.lineWidth = Math.max(2.5, w * 0.012); ctx.strokeStyle = g; ctx.stroke();
+    const ix = x + pad, iy = y + pad * 0.9;
+    drawIcon(p, ix, iy, ic, mix(col, '#101020', 0.75), alpha(col, 0.8));
+    ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = 22; iconPath(ix, iy, ic); ctx.lineWidth = Math.max(3, w * 0.018); ctx.strokeStyle = col; ctx.stroke(); ctx.restore();
+    if (p.team) teamBadge(p.team, x + w / 2, iy + ic, w, col, '#fff');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const ny = iy + ic + w * 0.21;
+    const ns = fit(p.name || '', w - pad * 1.4, w * 0.13, 800, ROUND); setFont(ns, 800, ROUND);
+    ctx.save(); ctx.shadowColor = alpha(col, 0.8); ctx.shadowBlur = 10; ctx.fillStyle = '#fff'; ctx.fillText(p.name || '', x + w / 2, ny); ctx.restore();
+    if (hasSub(p)) { const ss = fitSub(p, w - pad * 1.4, w * 0.098, 800, ROUND); setFont(ss, 800, ROUND); ctx.fillStyle = mix(col, '#ffffff', 0.35); fillSub(p, x + w / 2, ny + w * 0.135); }
+  },
+};
+
+// ====================== ポップ ======================
+const INK = '#26213a';
+const pop = {
+  bg() {
+    if (drawBgImage('rgba(255,255,255,0.35)')) return;
+    const t = state.theme;
+    ctx.fillStyle = mix(t, '#ffffff', 0.78); ctx.fillRect(0, 0, W, H);
+    // ななめの帯
+    ctx.save(); ctx.translate(W / 2, H / 2); ctx.rotate(-0.18);
+    ctx.fillStyle = mix(t, '#ffffff', 0.55); ctx.fillRect(-W, -90, W * 2, 180);
+    ctx.fillStyle = mix(hueShift(t, 50), '#ffffff', 0.6); ctx.fillRect(-W, 260, W * 2, 60);
+    ctx.restore();
+    // 水玉
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    for (let yy = 0; yy < H + 60; yy += 56) for (let xx = (yy / 56 % 2) * 28; xx < W + 60; xx += 56) { ctx.beginPath(); ctx.arc(xx, yy, 7, 0, 7); ctx.fill(); }
+    // 角のキラキラ
+    const stars = [[110, H - 110, 24, hueShift(t, -60)], [W - 120, H - 140, 36, hueShift(t, 50)]];
+    if (!(state.logo && state.logoPos === 'tl')) stars.push([150, 120, 34, hueShift(t, 50)]);
+    if (!(state.logo && state.logoPos === 'tr')) stars.push([W - 170, 110, 26, t]);
+    stars.forEach(([x, y, r, c]) => star(x, y, r, c));
+  },
+  header() {
+    const t = state.theme, lines = subLines();
+    const ty = lines.length ? 130 : 150;
+    if (!logoAsTitle(W / 2, ty - 38, W - 460, 140, 'center')) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      const s = fit(state.title, titleMaxW(W - 360), 100, 800, ROUND); setFont(s, 800, ROUND);
+      ctx.lineJoin = 'round';
+      ctx.fillStyle = INK; ctx.fillText(state.title, W / 2 + 8, ty + 8);
+      ctx.lineWidth = 18; ctx.strokeStyle = INK; ctx.strokeText(state.title, W / 2, ty);
+      ctx.lineWidth = 8; ctx.strokeStyle = '#fff'; ctx.strokeText(state.title, W / 2, ty);
+      ctx.fillStyle = t; ctx.fillText(state.title, W / 2, ty);
+    }
+    if (lines.length) subPill(lines, 166, (sx, sy, sw, sh, r) => {
+      rr(sx + 6, sy + 6, sw, sh, r); ctx.fillStyle = INK; ctx.fill();
+      rr(sx, sy, sw, sh, r); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+    }, INK);
+  },
+  ratio: 1.34, get top() { return 262 + extraTop(); },
+  card(p, x, y, w, h, i) {
+    const col = teamColor(p.team), pad = w * 0.1, ic = w - pad * 2, bw = Math.max(4, w * 0.022);
+    ctx.save(); ctx.translate(x + w / 2, y + h / 2); ctx.rotate((i % 2 ? 1 : -1) * 0.022); ctx.translate(-w / 2, -h / 2);
+    rr(w * 0.035, w * 0.035, w, h, w * 0.1); ctx.fillStyle = INK; ctx.fill();
+    rr(0, 0, w, h, w * 0.1); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = bw; ctx.strokeStyle = INK; ctx.stroke();
+    // 上の色
+    ctx.save(); rr(0, 0, w, h, w * 0.1); ctx.clip(); ctx.fillStyle = mix(col, '#ffffff', 0.55); ctx.fillRect(0, 0, w, pad + ic * 0.55); ctx.restore();
+    rr(0, 0, w, h, w * 0.1); ctx.lineWidth = bw; ctx.strokeStyle = INK; ctx.stroke();
+    const ix = pad, iy = pad * 0.9;
+    ctx.save(); iconPath(ix - bw * 0.5, iy - bw * 0.5, ic + bw); ctx.fillStyle = '#fff'; ctx.fill(); ctx.restore();
+    drawIcon(p, ix, iy, ic, mix(col, '#ffffff', 0.3), '#fff');
+    iconPath(ix, iy, ic); ctx.lineWidth = bw; ctx.strokeStyle = INK; ctx.stroke();
+    if (p.team) teamBadge(p.team, w / 2, iy + ic, w, col, '#fff', INK);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const ny = iy + ic + w * 0.21;
+    const ns = fit(p.name || '', w - pad * 1.4, w * 0.13, 800, ROUND); setFont(ns, 800, ROUND);
+    ctx.fillStyle = INK; ctx.fillText(p.name || '', w / 2, ny);
+    if (hasSub(p)) { const ss = fitSub(p, w - pad * 1.4, w * 0.098, 800, ROUND); setFont(ss, 800, ROUND); ctx.fillStyle = mix(col, INK, 0.25); fillSub(p, w / 2, ny + w * 0.135); }
+    ctx.restore();
+  },
+};
+function star(x, y, r, c) {
+  ctx.save(); ctx.translate(x, y); ctx.beginPath();
+  for (let k = 0; k < 8; k++) { const rr2 = k % 2 ? r * 0.28 : r, a = k * Math.PI / 4; ctx.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); }
+  ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.stroke(); ctx.restore();
+}
+
+// ====================== シネマ ======================
+let grain = null;
+function getGrain() {
+  if (grain) return grain;
+  grain = document.createElement('canvas'); grain.width = 256; grain.height = 256;
+  const g = grain.getContext('2d'), d = g.createImageData(256, 256);
+  for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 14; }
+  g.putImageData(d, 0, 0); return grain;
+}
+const cinema = {
+  bg() {
+    if (!drawBgImage('rgba(5,5,8,0.7)')) {
+      ctx.fillStyle = '#09090c'; ctx.fillRect(0, 0, W, H);
+      const g = ctx.createRadialGradient(W / 2, H * 0.55, 100, W / 2, H * 0.55, 1200);
+      g.addColorStop(0, alpha(state.theme, 0.16)); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
+    ctx.fillStyle = ctx.createPattern(getGrain(), 'repeat'); ctx.fillRect(0, 0, W, H);
+    const v = ctx.createRadialGradient(W / 2, H / 2, H * 0.4, W / 2, H / 2, H * 1.05);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.75)'); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  },
+  header() {
+    const t = state.theme, L = 90;
+    ctx.fillStyle = t; ctx.fillRect(L, 56, 10, 122);
+    const lb = logoBox();
+    const tx = lb && !lb.right ? lb.x + lb.w + 36 : L + 36;
+    const subR = lb && lb.right ? lb.x - 36 : W - L;
+    if (!logoAsTitle(L + 36, 117, W - 900, 124, 'left')) {
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      setFont(22, 900, GOTHIC); ctx.fillStyle = t;
+      ctx.fillText('C  A  S  T', tx + 2, 80);
+      const s = fit(state.title, Math.max(300, W - 900 - (lb ? lb.w + 36 : 0)), 76, 900, GOTHIC); setFont(s, 900, GOTHIC);
+      ctx.fillStyle = '#fff'; ctx.fillText(state.title, tx, 170);
+    }
+    const lines = subLines();
+    lines.forEach((l, i) => {
+      ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+      const ss = fit(l, 640, lines.length > 1 ? 28 : 32, 500, GOTHIC); setFont(ss, 500, GOTHIC);
+      ctx.fillStyle = i === lines.length - 1 ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.55)';
+      ctx.fillText(l, subR, 168 - (lines.length - 1 - i) * 40);
+    });
+    const g = ctx.createLinearGradient(L, 0, W - L, 0); g.addColorStop(0, alpha(t, 0.9)); g.addColorStop(1, 'rgba(255,255,255,0.08)');
+    ctx.fillStyle = g; ctx.fillRect(L, 206, W - L * 2, 2);
+  },
+  ratio: 1.45, top: 236, maxW: 330,
+  card(p, x, y, w, h) {
+    const col = teamColor(p.team), r = w * 0.03;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 12;
+    rr(x, y, w, h, r); ctx.fillStyle = '#16161c'; ctx.fill(); ctx.restore();
+    ctx.save(); rr(x, y, w, h, r); ctx.clip();
+    const im = getImg(p.img);
+    if (ready(im)) drawCover(im, x, y, w, h, 0.3);
+    else {
+      const g = ctx.createLinearGradient(x, y, x, y + h); g.addColorStop(0, mix(col, '#16161c', 0.55)); g.addColorStop(1, '#16161c');
+      ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = alpha(col, 0.35); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      setFont(w * 0.5, 900, GOTHIC); ctx.fillText((p.name || '?').slice(0, 1), x + w / 2, y + h * 0.4);
+    }
+    const sh = ctx.createLinearGradient(0, y + h * 0.45, 0, y + h);
+    sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(0.55, 'rgba(0,0,0,0.75)'); sh.addColorStop(1, 'rgba(0,0,0,0.95)');
+    ctx.fillStyle = sh; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = col; ctx.fillRect(x, y + h - Math.max(4, w * 0.018), w, Math.max(4, w * 0.018));
+    ctx.restore();
+    rr(x, y, w, h, r); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.stroke();
+    if (p.team) {
+      const bs = fit(p.team, w * 0.7, w * 0.072, 900, GOTHIC); setFont(bs, 900, GOTHIC);
+      const bw = ctx.measureText(p.team).width + bs * 1.2, bh = bs * 1.7;
+      ctx.fillStyle = col; ctx.fillRect(x, y + w * 0.06, bw, bh);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(p.team, x + bs * 0.6, y + w * 0.06 + bh / 2 + 1);
+    }
+    const L = x + w * 0.08, base = y + h - w * 0.1;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    const ns = fit(p.name || '', w * 0.84, w * 0.13, 900, GOTHIC); setFont(ns, 900, GOTHIC);
+    ctx.fillStyle = '#fff'; ctx.fillText(p.name || '', L, base);
+    if (hasSub(p)) { const ss = fitSub(p, w * 0.84, w * 0.09, 900, GOTHIC); setFont(ss, 900, GOTHIC); ctx.fillStyle = mix(col, '#ffffff', 0.3); fillSub(p, L, base - ns * 1.2, 0, 'up'); }
+  },
+};
+
+// ====================== 和風 ======================
+const MINCHO = '"Shippori Mincho B1","Yu Mincho","MS Mincho",serif';
+const WA_INK = '#2b2118', GOLD = '#b8964b', PAPER = '#f4ecdc';
+const wa = {
+  bg() {
+    if (!drawBgImage('rgba(244,236,220,0.55)')) {
+      ctx.fillStyle = PAPER; ctx.fillRect(0, 0, W, H);
+      // 青海波
+      ctx.lineWidth = 2;
+      for (let row = 0, yy = -10; yy < H + 60; row++, yy += 34) {
+        for (let xx = (row % 2) * 48 - 48; xx < W + 96; xx += 96) {
+          ctx.beginPath(); ctx.arc(xx, yy, 48, Math.PI, 2 * Math.PI); ctx.lineTo(xx + 48, yy + 40); ctx.lineTo(xx - 48, yy + 40); ctx.closePath();
+          ctx.fillStyle = PAPER; ctx.fill();
+          ctx.strokeStyle = 'rgba(150,115,70,0.14)';
+          for (const r of [46, 33, 20]) { ctx.beginPath(); ctx.arc(xx, yy, r, Math.PI, 2 * Math.PI); ctx.stroke(); }
+        }
+      }
+      // 日の丸
+      ctx.fillStyle = alpha(state.theme, 0.88); ctx.beginPath(); ctx.arc(W - 70, 70, 210, 0, 7); ctx.fill();
+      const fog = ctx.createLinearGradient(0, H - 260, 0, H); fog.addColorStop(0, 'rgba(244,236,220,0)'); fog.addColorStop(1, 'rgba(244,236,220,0.9)');
+      ctx.fillStyle = fog; ctx.fillRect(0, H - 260, W, 260);
+    }
+    ctx.strokeStyle = GOLD; ctx.lineWidth = 4; ctx.strokeRect(22, 22, W - 44, H - 44);
+    ctx.lineWidth = 1.5; ctx.strokeRect(34, 34, W - 68, H - 68);
+  },
+  header() {
+    const lines = subLines(), ty = lines.length ? 124 : 148;
+    if (!logoAsTitle(W / 2, ty - 36, W - 460, 140, 'center')) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      const s = fit(state.title, titleMaxW(W - 520), 92, 800, MINCHO); setFont(s, 800, MINCHO);
+      ctx.fillStyle = WA_INK; ctx.fillText(state.title, W / 2, ty);
+      const tw = ctx.measureText(state.title).width;
+      ctx.fillStyle = GOLD;
+      [-1, 1].forEach(d => {
+        const x0 = W / 2 + d * (tw / 2 + 40);
+        ctx.fillRect(d < 0 ? x0 - 110 : x0, ty - 32, 110, 3);
+        ctx.save(); ctx.translate(x0, ty - 30.5); ctx.rotate(Math.PI / 4); ctx.fillRect(-7, -7, 14, 14); ctx.restore();
+      });
+    }
+    lines.forEach((l, i) => {
+      const ss = fit(l, W - 700, lines.length > 1 ? 30 : 34, 600, MINCHO); setFont(ss, 600, MINCHO);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = i === 0 ? mix(state.theme, WA_INK, 0.35) : '#5a4632';
+      ctx.fillText(l, W / 2, ty + 64 + i * 44);
+    });
+  },
+  ratio: 1.38, get top() { return 252 + extraTop(); },
+  card(p, x, y, w, h) {
+    const col = teamColor(p.team), pad = w * 0.12, ic = w - pad * 2;
+    ctx.save(); ctx.shadowColor = 'rgba(80,50,20,0.28)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 8;
+    ctx.fillStyle = '#fffaf0'; ctx.fillRect(x, y, w, h); ctx.restore();
+    ctx.strokeStyle = GOLD; ctx.lineWidth = 2.5; ctx.strokeRect(x + 7, y + 7, w - 14, h - 14);
+    ctx.lineWidth = 1; ctx.strokeRect(x + 12, y + 12, w - 24, h - 24);
+    const ix = x + pad, iy = y + pad;
+    drawIcon(p, ix, iy, ic, mix(col, '#fffaf0', 0.55), '#fff');
+    iconPath(ix, iy, ic); ctx.lineWidth = Math.max(3, w * 0.018); ctx.strokeStyle = GOLD; ctx.stroke();
+    if (p.team) {
+      const bs = fit(p.team, w * 0.5, w * 0.08, 800, MINCHO); setFont(bs, 800, MINCHO);
+      const bw = ctx.measureText(p.team).width + bs * 0.9, bh = bs * 1.55;
+      ctx.save(); ctx.translate(x + w - pad * 0.55 - bw / 2, iy + ic - bh * 0.2); ctx.rotate(-0.1);
+      ctx.fillStyle = alpha(col, 0.92); ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
+      ctx.strokeStyle = '#fffaf0'; ctx.lineWidth = 2; ctx.strokeRect(-bw / 2 + 4, -bh / 2 + 4, bw - 8, bh - 8);
+      ctx.fillStyle = '#fffaf0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.team, 0, 2);
+      ctx.restore();
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const ny = iy + ic + w * 0.2;
+    const ns = fit(p.name || '', w - pad * 1.6, w * 0.13, 800, MINCHO); setFont(ns, 800, MINCHO);
+    ctx.fillStyle = WA_INK; ctx.fillText(p.name || '', x + w / 2, ny);
+    if (hasSub(p)) { const ss = fitSub(p, w - pad * 1.6, w * 0.092, 800, MINCHO); setFont(ss, 800, MINCHO); ctx.fillStyle = mix(col, WA_INK, 0.35); fillSub(p, x + w / 2, ny + w * 0.135); }
+  },
+};
+
+// ====================== アリーナ ======================
+const HEAVY = GOTHIC;
+const arena = {
+  bg() {
+    if (!drawBgImage('rgba(8,8,12,0.6)')) { ctx.fillStyle = '#0c0c11'; ctx.fillRect(0, 0, W, H); }
+    const t = state.theme, t2 = hueShift(t, 35);
+    const slash = (x1, w1, c, a) => { ctx.fillStyle = alpha(c, a); ctx.beginPath(); ctx.moveTo(x1, H); ctx.lineTo(x1 + w1, H); ctx.lineTo(x1 + w1 + 700, 0); ctx.lineTo(x1 + 700, 0); ctx.closePath(); ctx.fill(); };
+    slash(-560, 300, t, 0.5); slash(-200, 50, t2, 0.6); slash(1300, 420, t, 0.2); slash(1780, 36, t2, 0.5);
+    let seed = 3; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    for (let i = 0; i < 80; i++) {
+      ctx.strokeStyle = `rgba(255,255,255,${0.03 + rnd() * 0.08})`; ctx.lineWidth = 1 + rnd() * 2.5;
+      const x0 = rnd() * W * 1.3 - 200, y0 = rnd() * H, len = 200 + rnd() * 500;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + len * 0.54, y0 - len * 0.84); ctx.stroke();
+    }
+    ctx.fillStyle = alpha(t, 0.35);
+    for (let gx = W - 520; gx < W; gx += 22) for (let gy = H - 360; gy < H; gy += 22) {
+      const r = ((gx - (W - 520)) / 520) * ((gy - (H - 360)) / 360) * 9;
+      if (r > 0.6) { ctx.beginPath(); ctx.arc(gx, gy, r, 0, 7); ctx.fill(); }
+    }
+  },
+  header() {
+    const t = state.theme, lines = subLines(), ty = lines.length ? 128 : 150;
+    if (!logoAsTitle(W / 2, ty - 38, W - 460, 140, 'center')) {
+      ctx.save(); ctx.translate(W / 2, ty); ctx.transform(1, 0, -0.18, 1, 0, 0);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      const s = fit(state.title, titleMaxW(W - 380), 96, 900, HEAVY); setFont(s, 900, HEAVY);
+      ctx.fillStyle = t; ctx.fillText(state.title, 9, 9);
+      ctx.lineJoin = 'round'; ctx.lineWidth = 10; ctx.strokeStyle = '#000'; ctx.strokeText(state.title, 0, 0);
+      ctx.fillStyle = '#fff'; ctx.fillText(state.title, 0, 0);
+      ctx.restore();
+    }
+    if (lines.length) {
+      const size = lines.length > 1 ? 28 : 32;
+      const ss = Math.min(...lines.map(l => fit(l, W - 700, size, 900, HEAVY))); setFont(ss, 900, HEAVY);
+      const lh = ss * 1.35, sw = Math.max(...lines.map(l => ctx.measureText(l).width)) + ss * 2.4, sh = ss * 0.6 + lh * lines.length, sy = 170;
+      ctx.save(); ctx.translate(W / 2, sy + sh / 2); ctx.transform(1, 0, -0.25, 1, 0, 0);
+      ctx.fillStyle = '#000'; ctx.fillRect(-sw / 2 + 8, -sh / 2 + 8, sw, sh);
+      ctx.fillStyle = t; ctx.fillRect(-sw / 2, -sh / 2, sw, sh);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      lines.forEach((l, i) => ctx.fillText(l, 0, -sh / 2 + ss * 0.3 + lh * (i + 0.5) + 2));
+      ctx.restore();
+    }
+  },
+  ratio: 1.36, get top() { return 266 + extraTop(); },
+  card(p, x, y, w, h) {
+    const col = teamColor(p.team), sk = -0.1;
+    ctx.save(); ctx.translate(x + w / 2, y + h / 2); ctx.transform(1, 0, sk, 1, 0, 0);
+    const Wd = w * 0.92, L = -Wd / 2, T = -h / 2, split = h * 0.7;
+    ctx.fillStyle = col; ctx.fillRect(L + 10, T + 10, Wd, h);
+    ctx.save(); ctx.beginPath(); ctx.rect(L, T, Wd, h); ctx.clip();
+    ctx.fillStyle = '#15151c'; ctx.fillRect(L, T, Wd, h);
+    ctx.save(); ctx.transform(1, 0, -sk, 1, 0, 0);
+    const extra = Math.abs(sk) * h, im = getImg(p.img);
+    if (ready(im)) drawCover(im, L - extra, T, Wd + extra * 2, split, 0.3);
+    else {
+      const g = ctx.createLinearGradient(0, T, 0, T + split); g.addColorStop(0, mix(col, '#15151c', 0.35)); g.addColorStop(1, '#15151c');
+      ctx.fillStyle = g; ctx.fillRect(L - extra, T, Wd + extra * 2, split);
+      ctx.fillStyle = alpha('#ffffff', 0.18); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      setFont(w * 0.45, 900, HEAVY); ctx.fillText((p.name || '?').slice(0, 1), 0, T + split * 0.5);
+    }
+    ctx.restore();
+    ctx.fillStyle = '#0b0b0f'; ctx.fillRect(L, T + split, Wd, h - split);
+    ctx.fillStyle = col; ctx.fillRect(L, T + split, Wd, Math.max(5, w * 0.025));
+    ctx.restore();
+    ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.strokeRect(L, T, Wd, h);
+    if (p.team) {
+      const bs = fit(p.team, Wd * 0.7, w * 0.07, 900, HEAVY); setFont(bs, 900, HEAVY);
+      const bw = ctx.measureText(p.team).width + bs * 1.2, bh = bs * 1.6;
+      ctx.fillStyle = col; ctx.fillRect(L, T + w * 0.06, bw, bh);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(p.team, L + bs * 0.6, T + w * 0.06 + bh / 2 + 1);
+    }
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    const tx = L + Wd * 0.08;
+    const ns = fit(p.name || '', Wd * 0.84, w * 0.125, 900, HEAVY); setFont(ns, 900, HEAVY);
+    ctx.fillStyle = '#fff'; ctx.fillText(p.name || '', tx, T + split + w * 0.19);
+    if (hasSub(p)) { const ss = fitSub(p, Wd * 0.84, w * 0.085, 900, HEAVY); setFont(ss, 900, HEAVY); ctx.fillStyle = mix(col, '#ffffff', 0.25); fillSub(p, tx, T + split + w * 0.32); }
+    ctx.restore();
+  },
+};
+
+// ====================== ミニマル ======================
+const DARK = '#1d1d22';
+const clean = {
+  bg() {
+    if (drawBgImage('rgba(246,246,244,0.82)')) return;
+    ctx.fillStyle = '#f5f5f2'; ctx.fillRect(0, 0, W, H);
+    [[W * 0.92, -60, 760, 0.22], [0, H + 40, 820, 0.14]].forEach(([x, y, r, a]) => {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, alpha(state.theme, a)); g.addColorStop(1, alpha(state.theme, 0));
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    });
+  },
+  header() {
+    const t = state.theme, L = 90, lb = logoBox();
+    const tx = lb && !lb.right ? lb.x + lb.w + 36 : L;
+    const subR = lb && lb.right ? lb.x - 36 : W - L;
+    if (!logoAsTitle(L, 117, W - 900, 124, 'left')) {
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = t; ctx.beginPath(); ctx.arc(tx + 7, 73, 7, 0, 7); ctx.fill();
+      setFont(22, 900, GOTHIC); ctx.fillText('M E M B E R S', tx + 24, 81);
+      const s = fit(state.title, Math.max(300, W - 900 - (lb ? lb.w + 36 : 0)), 76, 900, GOTHIC); setFont(s, 900, GOTHIC);
+      ctx.fillStyle = DARK; ctx.fillText(state.title, tx, 170);
+    }
+    const lines = subLines();
+    lines.forEach((l, i) => {
+      ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+      const ss = fit(l, 640, lines.length > 1 ? 28 : 32, 500, GOTHIC); setFont(ss, 500, GOTHIC);
+      ctx.fillStyle = i === lines.length - 1 ? '#55555e' : '#8a8a94';
+      ctx.fillText(l, subR, 168 - (lines.length - 1 - i) * 40);
+    });
+    ctx.fillStyle = '#e2e2e6'; ctx.fillRect(L, 206, W - L * 2, 2);
+  },
+  ratio: 1.34, top: 236,
+  card(p, x, y, w, h) {
+    const col = teamColor(p.team), pad = w * 0.12, ic = w - pad * 2;
+    ctx.save(); ctx.shadowColor = 'rgba(20,20,40,0.10)'; ctx.shadowBlur = 34; ctx.shadowOffsetY = 12;
+    rr(x, y, w, h, w * 0.1); ctx.fillStyle = '#fff'; ctx.fill(); ctx.restore();
+    const ix = x + pad, iy = y + pad;
+    drawIcon(p, ix, iy, ic, mix(col, '#ffffff', 0.55), '#fff');
+    if (p.team) {
+      const bs = fit(p.team, w * 0.6, w * 0.07, 900, GOTHIC); setFont(bs, 900, GOTHIC);
+      const bw = ctx.measureText(p.team).width + bs * 1.4, bh = bs * 1.7;
+      rr(x + pad * 0.45, y + pad * 0.45, bw, bh, bh / 2); ctx.fillStyle = col; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.team, x + pad * 0.45 + bw / 2, y + pad * 0.45 + bh / 2 + 1);
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const ny = iy + ic + w * 0.2;
+    const ns = fit(p.name || '', w - pad * 1.4, w * 0.125, 900, GOTHIC); setFont(ns, 900, GOTHIC);
+    ctx.fillStyle = DARK; ctx.fillText(p.name || '', x + w / 2, ny);
+    if (hasSub(p) && subIconW(p, 1)) {
+      // アイコンを選んだ時は、丸い点のかわりにアイコン
+      const ss = fitSub(p, w - pad * 2, w * 0.088, 500, GOTHIC); setFont(ss, 500, GOTHIC);
+      ctx.fillStyle = '#6b6b75'; fillSub(p, x + w / 2, ny + w * 0.13);
+    } else if (hasSub(p)) {
+      const ss = fit(p.sub, w - pad * 2, w * 0.088, 500, GOTHIC); setFont(ss, 500, GOTHIC);
+      const sw = ctx.measureText(p.sub).width, d = ss * 0.32, sy = ny + w * 0.13;
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x + w / 2 - sw / 2 - d * 1.2, sy - ss * 0.33, d, 0, 7); ctx.fill();
+      ctx.fillStyle = '#6b6b75'; ctx.fillText(p.sub, x + w / 2 + d * 1.2, sy);
+    }
+  },
+};
+
+// ====================== レトロ ======================
+const PIXEL = '"DotGothic16","MS Gothic",monospace';
+const NAVY = '#10143a';
+function seeded(s) { return () => (s = (s * 9301 + 49297) % 233280) / 233280; }
+// 角が欠けたドットの箱
+function pixBox(x, y, w, h, b, border, fill) {
+  x = Math.round(x); y = Math.round(y); w = Math.round(w); h = Math.round(h); b = Math.max(1, Math.round(b));
+  ctx.fillStyle = border; ctx.fillRect(x + b, y, w - 2 * b, h); ctx.fillRect(x, y + b, w, h - 2 * b);
+  ctx.fillStyle = fill; ctx.fillRect(x + b, y + b, w - 2 * b, h - 2 * b);
+}
+// RPG のウィンドウ（外が黒・中が白のふち）
+function rpgWin(x, y, w, h, b, fill, border) { pixBox(x, y, w, h, b, '#000', '#000'); pixBox(x + b, y + b, w - 2 * b, h - 2 * b, b, border || '#fff', fill); }
+// ドットの字は太さがないので、少しずらして2回描いて太くする
+function boldText(t, x, y, k) { ctx.fillText(t, x - k / 2, y); ctx.fillText(t, x + k / 2, y); }
+const pixCache = new Map();
+function pixelIcon(p, x, y, s, col) {
+  const im = getImg(p.img);
+  ctx.save();
+  if (ready(im)) {
+    let oc = pixCache.get(p.img);
+    if (!oc) {
+      const n = 64; oc = document.createElement('canvas'); oc.width = oc.height = n;
+      const k = Math.max(n / im.width, n / im.height), sw = n / k, sh = n / k;
+      oc.getContext('2d').drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, 0, 0, n, n);
+      pixCache.set(p.img, oc);
+    }
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(oc, x, y, s, s);
+  } else {
+    ctx.fillStyle = mix(col, NAVY, 0.6); ctx.fillRect(x, y, s, s);
+    ctx.fillStyle = alpha(col, 0.9); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    setFont(s * 0.5, 400, PIXEL); boldText((p.name || '?').slice(0, 1), x + s / 2, y + s / 2, s * 0.02);
+  }
+  ctx.restore();
+}
+const retro = {
+  bg() {
+    const t = state.theme;
+    if (!drawBgImage('rgba(6,8,24,0.6)')) {
+      const top = '#080a1e', bot = mix(t, '#080a1e', 0.6);
+      for (let i = 0; i < 12; i++) { ctx.fillStyle = mix(top, bot, i / 11); ctx.fillRect(0, Math.floor(i * H / 12), W, Math.ceil(H / 12) + 1); }
+      const rnd = seeded(5);
+      for (let i = 0; i < 140; i++) {
+        const s = rnd() < 0.8 ? 4 : 8; ctx.fillStyle = `rgba(255,255,255,${0.25 + rnd() * 0.6})`;
+        ctx.fillRect(Math.round(rnd() * W / 4) * 4, Math.round(rnd() * H * 0.7 / 4) * 4, s, s);
+      }
+      // 十字にきらっと光る星
+      for (let i = 0; i < 10; i++) {
+        const sx = Math.round(rnd() * W / 4) * 4, sy = Math.round(rnd() * H * 0.6 / 4) * 4; ctx.fillStyle = mix(t, '#ffffff', 0.4);
+        ctx.fillRect(sx - 12, sy, 28, 4); ctx.fillRect(sx, sy - 12, 4, 28);
+      }
+      // ドットの山
+      [[0.55, 150, 0.0], [0.75, 90, 2.1]].forEach(([dk, base, ph]) => {
+        ctx.fillStyle = mix(t, '#000000', dk);
+        for (let gx = 0; gx < W; gx += 24) {
+          const hh = Math.round((base + 60 * Math.sin(gx / 210 + ph) + 30 * Math.sin(gx / 77 + ph)) / 12) * 12;
+          ctx.fillRect(gx, H - hh, 24, hh);
+        }
+      });
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.13)';
+    for (let yy = 0; yy < H; yy += 4) ctx.fillRect(0, yy, W, 2);
+  },
+  header() {
+    const t = state.theme, lines = subLines(), ty = lines.length ? 128 : 150;
+    if (!logoAsTitle(W / 2, ty - 38, W - 460, 140, 'center')) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      const s = fit(state.title, titleMaxW(W - 380), 100, 400, PIXEL); setFont(s, 400, PIXEL);
+      ctx.fillStyle = '#000'; boldText(state.title, W / 2 + 10, ty + 10, 4);
+      ctx.fillStyle = t; boldText(state.title, W / 2 + 5, ty + 5, 4);
+      ctx.fillStyle = '#fff'; boldText(state.title, W / 2, ty, 4);
+    }
+    if (lines.length) {
+      const ss = Math.min(...lines.map(l => fit(l, W - 760, lines.length > 1 ? 30 : 34, 400, PIXEL))); setFont(ss, 400, PIXEL);
+      const lh = ss * 1.4, sw = Math.max(...lines.map(l => ctx.measureText(l).width)) + ss * 4, sh = ss * 1.1 + lh * lines.length;
+      const sx = W / 2 - sw / 2, sy = 164;
+      rpgWin(sx, sy, sw, sh, 5, NAVY);
+      ctx.textBaseline = 'middle';
+      lines.forEach((l, i) => {
+        const ly = sy + ss * 0.55 + lh * (i + 0.5) + 1;
+        ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; boldText(l, W / 2 + ss * 0.5, ly, 2);
+        if (i === 0) { ctx.textAlign = 'left'; ctx.fillStyle = t; ctx.fillText('▶', sx + ss * 0.8, ly); }
+      });
+    }
+  },
+  ratio: 1.36, get top() { return 266 + extraTop(); },
+  card(p, x, y, w, h) {
+    const col = teamColor(p.team), b = Math.max(4, Math.round(w * 0.02)), pad = w * 0.12, ic = w - pad * 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(Math.round(x + b * 2), Math.round(y + b * 2), Math.round(w), Math.round(h));
+    rpgWin(x, y, w, h, b, NAVY);
+    const ix = x + pad, iy = y + pad * 0.95;
+    pixBox(ix - b, iy - b, ic + b * 2, ic + b * 2, b, col, '#000');
+    pixelIcon(p, ix, iy, ic, col);
+    if (p.team) {
+      const bs = fit(p.team, w * 0.62, w * 0.078, 400, PIXEL); setFont(bs, 400, PIXEL);
+      const bw = ctx.measureText(p.team).width + bs * 1.3, bh = bs * 1.7;
+      pixBox(x + w / 2 - bw / 2, iy + ic - bh * 0.35, bw, bh, b * 0.75, '#000', col);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; boldText(p.team, x + w / 2, iy + ic - bh * 0.35 + bh / 2 + 1, 2);
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const ny = iy + ic + w * 0.22;
+    const ns = fit(p.name || '', w - pad * 1.4, w * 0.13, 400, PIXEL); setFont(ns, 400, PIXEL);
+    ctx.fillStyle = '#fff'; boldText(p.name || '', x + w / 2, ny, Math.max(2, w * 0.008));
+    if (hasSub(p)) { const ss = fitSub(p, w - pad * 1.4, w * 0.098, 400, PIXEL); setFont(ss, 400, PIXEL); ctx.fillStyle = mix(col, '#ffffff', 0.35); fillSub(p, x + w / 2, ny + w * 0.135, 2); }
+  },
+};
+
+// ====================== チェキ ======================
+const HAND = '"Klee One","Yu Gothic",sans-serif';
+const BROWN = '#3a2c22';
+let corkCanvas = null;
+function getCork() {
+  if (corkCanvas) return corkCanvas;
+  corkCanvas = document.createElement('canvas'); corkCanvas.width = W; corkCanvas.height = H;
+  const g = corkCanvas.getContext('2d'), rnd = seeded(11);
+  g.fillStyle = '#c4935b'; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 14000; i++) {
+    g.fillStyle = rnd() < 0.55 ? `rgba(95,58,22,${0.08 + rnd() * 0.25})` : `rgba(255,232,195,${0.06 + rnd() * 0.2})`;
+    const s = 1 + rnd() * 3.5; g.fillRect(rnd() * W, rnd() * H, s, s * (0.5 + rnd()));
+  }
+  return corkCanvas;
+}
+// ぎざぎざの端のマスキングテープ
+function tape(cx, cy, w, h, rot, color) {
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot); ctx.beginPath(); ctx.moveTo(-w / 2, -h / 2); ctx.lineTo(w / 2, -h / 2);
+  for (let k = 1; k <= 4; k++) ctx.lineTo(w / 2 + (k % 2 ? -5 : 0), -h / 2 + h * k / 4);
+  ctx.lineTo(-w / 2, h / 2);
+  for (let k = 3; k >= 0; k--) ctx.lineTo(-w / 2 + (k % 2 ? 5 : 0), -h / 2 + h * k / 4);
+  ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(-w / 2 + 6, -h / 2 + h * 0.2, w - 12, h * 0.18);
+  ctx.restore();
+}
+const cheki = {
+  bg() {
+    if (!drawBgImage('rgba(60,35,15,0.3)')) {
+      ctx.drawImage(getCork(), 0, 0);
+      const v = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 1.1);
+      v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(50,25,5,0.55)'); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+    }
+    const f = 24; ctx.fillStyle = '#6b4424';
+    ctx.fillRect(0, 0, W, f); ctx.fillRect(0, H - f, W, f); ctx.fillRect(0, 0, f, H); ctx.fillRect(W - f, 0, f, H);
+    ctx.strokeStyle = '#8f5f35'; ctx.lineWidth = 3; ctx.strokeRect(f - 1.5, f - 1.5, W - 2 * f + 3, H - 2 * f + 3);
+  },
+  bannerH() { return 128 + subLines().length * 44; },
+  header() {
+    const t = state.theme, lines = subLines(), bh = this.bannerH();
+    const ts = fit(state.title, titleMaxW(W - 640), 84, 600, HAND); setFont(ts, 600, HAND);
+    let tw = ctx.measureText(state.title).width;
+    const lim = state.logo && state.logoPos === 'title' ? getImg(state.logo) : null;
+    if (ready(lim)) tw = Math.min(W - 640, lim.width * (100 * logoScale() / lim.height));
+    const ss = lines.length ? Math.min(...lines.map(l => fit(l, W - 700, lines.length > 1 ? 30 : 34, 600, HAND))) : 30;
+    setFont(ss, 600, HAND); const subW = lines.length ? Math.max(...lines.map(l => ctx.measureText(l).width)) : 0;
+    const bw = Math.min(titleMaxW(W - 420), Math.max(tw, subW, 520) + 180), top = 40;
+    ctx.save(); ctx.translate(W / 2, top + bh / 2); ctx.rotate(-0.012);
+    const L = -bw / 2, T = -bh / 2;
+    ctx.save(); ctx.shadowColor = 'rgba(40,20,0,0.45)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 8; ctx.fillStyle = '#fbf7ee'; ctx.fillRect(L, T, bw, bh); ctx.restore();
+    ctx.fillStyle = 'rgba(90,140,200,0.18)'; for (let ly = T + 44; ly < T + bh - 8; ly += 44) ctx.fillRect(L + 12, ly, bw - 24, 2);
+    ctx.fillStyle = 'rgba(220,90,90,0.35)'; ctx.fillRect(L + 56, T, 2, bh);
+    if (!logoAsTitle(0, T + 66, W - 640, 100, 'center')) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; setFont(ts, 600, HAND);
+      ctx.fillStyle = alpha(t, 0.38); ctx.fillRect(-tw / 2 - 10, T + 70, tw + 20, ts * 0.36);
+      ctx.fillStyle = BROWN; ctx.fillText(state.title, 0, T + 98);
+    }
+    lines.forEach((l, i) => {
+      setFont(ss, 600, HAND); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = i === 0 ? mix(t, BROWN, 0.45) : '#6b5a4a'; ctx.fillText(l, 0, T + 150 + i * 44);
+    });
+    tape(L + 30, T + 4, 150, 40, -0.55, alpha(t, 0.6));
+    tape(L + bw - 30, T + 4, 150, 40, 0.55, alpha(hueShift(t, 50), 0.6));
+    ctx.restore();
+  },
+  ratio: 1.3, maxW: 310, get top() { return 40 + this.bannerH() + 34; },
+  card(p, x, y, w, h, i) {
+    const col = teamColor(p.team), rot = [-0.035, 0.025, -0.012, 0.04, -0.028, 0.016, 0.03][i % 7];
+    ctx.save(); ctx.translate(x + w / 2, y + h / 2); ctx.rotate(rot);
+    const L = -w / 2, T = -h / 2, pad = w * 0.07, ph = w - pad * 2;
+    ctx.save(); ctx.shadowColor = 'rgba(40,20,0,0.5)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 9; ctx.fillStyle = '#fdfcf8'; ctx.fillRect(L, T, w, h); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.rect(L + pad, T + pad, ph, ph); ctx.clip();
+    const im = getImg(p.img);
+    if (ready(im)) drawCover(im, L + pad, T + pad, ph, ph, 0.4);
+    else {
+      const g = ctx.createLinearGradient(0, T + pad, 0, T + pad + ph); g.addColorStop(0, mix(col, '#ffffff', 0.35)); g.addColorStop(1, mix(col, '#ffffff', 0.7));
+      ctx.fillStyle = g; ctx.fillRect(L + pad, T + pad, ph, ph);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      setFont(ph * 0.45, 600, HAND); ctx.fillText((p.name || '?').slice(0, 1), 0, T + pad + ph / 2);
+    }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 1.5; ctx.strokeRect(L + pad, T + pad, ph, ph);
+    tape(0, T + 2, w * 0.38, w * 0.11, -rot * 4 + 0.05, alpha(mix(col, '#ffffff', 0.25), 0.6));
+    if (p.team) {
+      const bs = fit(p.team, w * 0.55, w * 0.075, 600, HAND); setFont(bs, 600, HAND);
+      const bw = ctx.measureText(p.team).width + bs * 1.3, bh = bs * 1.6;
+      ctx.save(); ctx.translate(L + w - pad - bw * 0.42, T + pad + ph - bh * 0.25); ctx.rotate(0.12);
+      ctx.shadowColor = 'rgba(0,0,0,0.25)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+      rr(-bw / 2, -bh / 2, bw, bh, bh / 2); ctx.fillStyle = col; ctx.fill(); ctx.shadowColor = 'transparent';
+      ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.team, 0, 1);
+      ctx.restore();
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const ny = T + pad + ph + w * 0.165;
+    const ns = fit(p.name || '', w - pad * 2.5, w * 0.125, 600, HAND); setFont(ns, 600, HAND);
+    ctx.fillStyle = BROWN; ctx.fillText(p.name || '', 0, ny);
+    if (hasSub(p)) { const ss = fitSub(p, w - pad * 2.5, w * 0.088, 600, HAND); setFont(ss, 600, HAND); ctx.fillStyle = mix(col, BROWN, 0.4); fillSub(p, 0, ny + w * 0.115); }
+    ctx.restore();
+  },
+};
+
+// ====================== トレカ ======================
+function goldGrad(y0, y1) {
+  const g = ctx.createLinearGradient(0, y0, 0, y1);
+  g.addColorStop(0, '#fff4c4'); g.addColorStop(0.45, '#f0c34a'); g.addColorStop(0.55, '#a8771a'); g.addColorStop(1, '#ffe08a');
+  return g;
+}
+function sparkle(x, y, r, c) {
+  ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.quadraticCurveTo(x, y, x, y + r);
+  ctx.quadraticCurveTo(x, y, x - r, y); ctx.quadraticCurveTo(x, y, x, y - r); ctx.fill();
+}
+const tcg = {
+  bg() {
+    const t = state.theme;
+    if (!drawBgImage('rgba(8,6,20,0.65)')) {
+      ctx.fillStyle = '#0b0818'; ctx.fillRect(0, 0, W, H);
+      const cx = W / 2, cy = H * 0.52;
+      for (let k = 0; k < 36; k += 2) {
+        const a0 = k * Math.PI / 18, a1 = (k + 1) * Math.PI / 18;
+        ctx.fillStyle = alpha(k % 4 ? t : hueShift(t, 40), 0.07);
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a0) * 2000, cy + Math.sin(a0) * 2000); ctx.lineTo(cx + Math.cos(a1) * 2000, cy + Math.sin(a1) * 2000); ctx.closePath(); ctx.fill();
+      }
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 1100); g.addColorStop(0, alpha(t, 0.38)); g.addColorStop(1, alpha(t, 0));
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      const v = ctx.createRadialGradient(cx, cy, H * 0.45, cx, cy, H * 1.1); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.7)');
+      ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+    }
+    const rnd = seeded(9);
+    for (let i = 0; i < 40; i++) sparkle(rnd() * W, rnd() * H, 4 + rnd() * 12, `rgba(255,240,200,${0.2 + rnd() * 0.5})`);
+  },
+  header() {
+    const t = state.theme, lines = subLines(), ty = lines.length ? 128 : 150;
+    if (!logoAsTitle(W / 2, ty - 38, W - 460, 140, 'center')) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      const s = fit(state.title, titleMaxW(W - 380), 98, 900, GOTHIC); setFont(s, 900, GOTHIC);
+      ctx.save(); ctx.shadowColor = alpha(t, 0.9); ctx.shadowBlur = 36;
+      ctx.lineJoin = 'round'; ctx.lineWidth = 12; ctx.strokeStyle = '#1a1206'; ctx.strokeText(state.title, W / 2, ty); ctx.restore();
+      ctx.fillStyle = goldGrad(ty - s * 0.85, ty + s * 0.05); ctx.fillText(state.title, W / 2, ty);
+    }
+    if (lines.length) subPill(lines, 164, (sx, sy, sw, sh, r) => {
+      rr(sx, sy, sw, sh, 10); ctx.fillStyle = 'rgba(14,10,28,0.8)'; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = goldGrad(sy, sy + sh); ctx.stroke();
+      [sx, sx + sw].forEach(dx => { ctx.save(); ctx.translate(dx, sy + sh / 2); ctx.rotate(Math.PI / 4); ctx.fillStyle = '#f0c34a'; ctx.fillRect(-7, -7, 14, 14); ctx.restore(); });
+    }, '#ffe9a8');
+  },
+  ratio: 1.4, get top() { return 262 + extraTop(); },
+  card(p, x, y, w, h) {
+    const col = teamColor(p.team), r = w * 0.05, b = w * 0.045;
+    // ホロの枠
+    ctx.save(); ctx.shadowColor = alpha(col, 0.55); ctx.shadowBlur = 26;
+    const g = ctx.createLinearGradient(x, y, x + w, y + h);
+    g.addColorStop(0, hueShift(col, -50)); g.addColorStop(0.25, mix(col, '#ffffff', 0.55)); g.addColorStop(0.5, col);
+    g.addColorStop(0.75, hueShift(col, 60)); g.addColorStop(1, mix(hueShift(col, -50), '#ffffff', 0.4));
+    rr(x, y, w, h, r); ctx.fillStyle = g; ctx.fill(); ctx.restore();
+    rr(x + b, y + b, w - 2 * b, h - 2 * b, r * 0.6); ctx.fillStyle = '#15111f'; ctx.fill();
+    // 名前の帯
+    const nx = x + b * 1.6, nw = w - b * 3.2, nby = y + b * 1.6, nbh = w * 0.16;
+    const ng = ctx.createLinearGradient(nx, 0, nx + nw, 0); ng.addColorStop(0, mix(col, '#15111f', 0.25)); ng.addColorStop(1, mix(col, '#15111f', 0.65));
+    rr(nx, nby, nw, nbh, nbh * 0.25); ctx.fillStyle = ng; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = goldGrad(nby, nby + nbh); ctx.stroke();
+    const gr = nbh * 0.3, gx = nx + nw - nbh * 0.5, gy = nby + nbh / 2;
+    const gg = ctx.createRadialGradient(gx - gr * 0.3, gy - gr * 0.3, 0, gx, gy, gr); gg.addColorStop(0, '#ffffff'); gg.addColorStop(0.35, mix(col, '#ffffff', 0.3)); gg.addColorStop(1, mix(col, '#000000', 0.3));
+    ctx.beginPath(); ctx.arc(gx, gy, gr, 0, 7); ctx.fillStyle = gg; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#f0c34a'; ctx.stroke();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const ns = fit(p.name || '', nw - nbh * 1.3, w * 0.11, 900, GOTHIC); setFont(ns, 900, GOTHIC);
+    ctx.fillStyle = '#fff'; ctx.fillText(p.name || '', nx + nbh * 0.32, gy + 2);
+    // 絵
+    const ay = nby + nbh + b * 0.8, ah = nw * 0.86;
+    ctx.save(); ctx.beginPath(); ctx.rect(nx, ay, nw, ah); ctx.clip();
+    const im = getImg(p.img);
+    if (ready(im)) drawCover(im, nx, ay, nw, ah, 0.35);
+    else {
+      const pg = ctx.createLinearGradient(0, ay, 0, ay + ah); pg.addColorStop(0, mix(col, '#15111f', 0.2)); pg.addColorStop(1, mix(col, '#15111f', 0.7));
+      ctx.fillStyle = pg; ctx.fillRect(nx, ay, nw, ah);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      setFont(ah * 0.5, 900, GOTHIC); ctx.fillText((p.name || '?').slice(0, 1), nx + nw / 2, ay + ah / 2);
+    }
+    const sh = ctx.createLinearGradient(nx, ay, nx + nw, ay + ah);
+    sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(0.38, 'rgba(255,255,255,0)'); sh.addColorStop(0.46, 'rgba(255,255,255,0.22)');
+    sh.addColorStop(0.52, 'rgba(255,255,255,0)'); sh.addColorStop(0.6, 'rgba(255,255,255,0.1)'); sh.addColorStop(0.64, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sh; ctx.fillRect(nx, ay, nw, ah);
+    ctx.restore();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = goldGrad(ay, ay + ah); ctx.strokeRect(nx, ay, nw, ah);
+    if (p.team) {
+      const bs = fit(p.team, nw * 0.7, w * 0.068, 900, GOTHIC); setFont(bs, 900, GOTHIC);
+      const bw = ctx.measureText(p.team).width + bs * 1.3, bh = bs * 1.6, by = ay + ah - bh - b * 0.6;
+      rr(nx + b * 0.6, by, bw, bh, bh / 2); ctx.fillStyle = col; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#f0c34a'; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.team, nx + b * 0.6 + bw / 2, by + bh / 2 + 1);
+    }
+    // 下の説明の欄
+    const by2 = ay + ah + b * 0.8, bh2 = y + h - b * 1.6 - by2;
+    rr(nx, by2, nw, bh2, 8); ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = alpha(col, 0.6); ctx.stroke();
+    if (hasSub(p)) {
+      const ss = fitSub(p, nw * 0.88, w * 0.088, 900, GOTHIC); setFont(ss, 900, GOTHIC);
+      ctx.fillStyle = mix(col, '#ffffff', 0.45); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; fillSub(p, nx + nw / 2, by2 + bh2 / 2 + 2, 0, 'center');
+    }
+  },
+};
+
+function teamBadge(team, cx, cy, w, col, fg, outline) {
+  const bs = fit(team, w * 0.7, w * 0.082, 800, ROUND); setFont(bs, 800, ROUND);
+  const bw = ctx.measureText(team).width + bs * 1.3, bh = bs * 1.65, bx = cx - bw / 2, by = cy - bh * 0.62;
+  rr(bx, by, bw, bh, bh / 2); ctx.fillStyle = col; ctx.fill();
+  if (outline) { ctx.lineWidth = Math.max(3, w * 0.016); ctx.strokeStyle = outline; ctx.stroke(); }
+  ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(team, cx, by + bh / 2 + 1);
+}
+
+const STYLES = { neon, pop, cinema, wa, arena, clean, retro, cheki, tcg };
+function draw() {
+  const S = STYLES[state.style] || neon;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
+  S.bg(); S.header(); cornerLogo();
+  const n = state.people.length; if (!n) return;
+  // カードの縦の長さ（％）。ID を2段にした時などにはみ出さないように
+  const tall = (parseFloat(state.cardTall) || 100) / 100;
+  layout(n, S.top, 50, S.ratio * tall, S.maxW || 320, 70).forEach(c => {
+    if (state.style === 'pop') { ctx.save(); ctx.translate(c.x, c.y); S.card(state.people[c.i], 0, 0, c.w, c.h, c.i); ctx.restore(); }
+    else S.card(state.people[c.i], c.x, c.y, c.w, c.h, c.i);
+  });
+}
+
+// ---------- 入力欄 ----------
+const ICON_OPTIONS = [['', 'なし'], ['tw', 'Twitch'], ['yt', 'YouTube'], ['mc', 'マイクラ']];
+let pickFor = null;
+function renderList() {
+  const list = $('list'); list.innerHTML = '';
+  state.people.forEach((p, i) => {
+    const d = document.createElement('div'); d.className = 'person';
+    const th = document.createElement('div'); th.className = 'thumb';
+    if (p.img) th.style.backgroundImage = `url(${p.img})`; else th.textContent = '画像を\nえらぶ';
+    th.onclick = () => { pickFor = i; $('file').click(); };
+    const f = document.createElement('div');
+    [['name','名前'],['sub','2行目（役・ID など）'],['team','チーム名（なしでもOK）']].forEach(([k, ph]) => {
+      const n = k === 'sub' ? 1 : k === 'sub2' ? 2 : 0;
+      const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = ph; inp.value = p[k] || '';
+      inp.oninput = () => { p[k] = inp.value; save(); draw(); if (n) fetchFaceSoon(p, n); };
+      if (n) {
+        // 2行目・3行目の左のアイコン（なし・Twitch・YouTube・マイクラ）
+        const L = LINE[n];
+        const wrap = document.createElement('div'); wrap.className = 'subrow';
+        const sel = document.createElement('select'); sel.title = (n + 1) + '行目の左のアイコン';
+        ICON_OPTIONS.forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); });
+        sel.value = p[L.icon] || '';
+        sel.onchange = () => { p[L.icon] = sel.value; save(); draw(); fetchFace(p, n); };
+        wrap.append(sel, inp); f.appendChild(wrap);
+      } else f.appendChild(inp);
+    });
+    const ops = document.createElement('div'); ops.className = 'ops';
+    const mk = (t, fn) => { const b = document.createElement('button'); b.textContent = t; b.onclick = fn; ops.appendChild(b); };
+    mk('↑', () => { if (i > 0) { [state.people[i - 1], state.people[i]] = [state.people[i], state.people[i - 1]]; update(); } });
+    mk('↓', () => { if (i < state.people.length - 1) { [state.people[i + 1], state.people[i]] = [state.people[i], state.people[i + 1]]; update(); } });
+    mk('×', () => { if (confirm(`${p.name || 'この人'} を消す？`)) { state.people.splice(i, 1); update(); } });
+    d.append(th, f, ops); list.appendChild(d);
+  });
+}
+function renderStyles() {
+  document.querySelectorAll('#styles button').forEach(b => b.classList.toggle('on', b.dataset.s === state.style));
+}
+function update() { save(); renderList(); renderStyles(); draw(); }
+
+document.querySelectorAll('#styles button').forEach(b => b.onclick = () => { state.style = b.dataset.s; update(); });
+$('file').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file || pickFor == null) return;
+  state.people[pickFor].img = await readImage(file, 500); update();
+};
+$('bgBtn').onclick = () => $('bgFile').click();
+$('bgFile').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  state.bg = await readImage(file, 1920, 'image/jpeg'); update();
+};
+$('bgClear').onclick = () => { state.bg = null; update(); };
+$('logoBtn').onclick = () => $('logoFile').click();
+$('logoFile').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  state.logo = await readImage(file, 1200, 'image/png'); update();
+};
+$('logoClear').onclick = () => { state.logo = null; update(); };
+$('add').onclick = () => { state.people.push({ name:'', sub:'', team:'', img:null }); update(); };
+['iconAll'].forEach(id => $(id).onchange = () => {
+  const el = $(id), v = el.value, n = Number(el.dataset.n); if (!v) return;
+  state.people.forEach(p => { p[LINE[n].icon] = v === 'none' ? '' : v; });
+  el.value = ''; update();
+  if (v === 'mc') (async () => { for (const p of state.people) await fetchFace(p, n); })();
+});
+$('sortTeam').onclick = () => {
+  const teams = [...new Set(state.people.map(p => p.team || ''))];
+  state.people.sort((a, b) => teams.indexOf(a.team || '') - teams.indexOf(b.team || '')); update();
+};
+const FIELDS = ['title','subtitle','theme','shape','logoPos','logoSize','iconScale','cardTall'];
+function applyInputs() {
+  FIELDS.forEach(k => { $(k).value = state[k] == null ? '' : state[k]; });
+  $('cardTallVal').textContent = (state.cardTall || 100) + '%';
+  document.documentElement.style.setProperty('--accent', state.theme);
+}
+FIELDS.forEach(k => {
+  const el = $(k);
+  el.oninput = el.onchange = () => { state[k] = el.value; document.documentElement.style.setProperty('--accent', state.theme); $('cardTallVal').textContent = (state.cardTall || 100) + '%'; save(); draw(); };
+});
+applyInputs();
+// 保存したデータを画面に出す（変更なしのあつかい）
+function applyLoaded(saved) {
+  state = Object.assign(defaultState(), saved || {});
+  if (!state.people.length) state.people = defaultPeople();
+  applyInputs(); renderList(); renderStyles(); draw(); ensureFonts();
+  dirty = false;
+}
+$('saveData').onclick = () => saveNow();
+$('discard').onclick = async () => {
+  if (dirty && !confirm(`保存していない変更を消して、「${currentSlot}」の最後に保存したところに戻す？`)) return;
+  const saved = await loadSlot(currentSlot);
+  applyLoaded(saved);
+  setStatus(saved ? `「${currentSlot}」の最後に保存したところに戻したよ` : 'まだ保存したものがないので、はじめの状態に戻したよ');
+};
+$('slotOpen').onclick = async () => {
+  const name = $('slots').value;
+  if (!name || name === currentSlot && !dirty) return;
+  if (dirty && !confirm(`「${currentSlot}」に保存していない変更があるよ。消して「${name}」を開く？`)) { $('slots').value = currentSlot; return; }
+  const saved = await loadSlot(name);
+  if (!saved) { setStatus(`「${name}」はまだ保存されていないよ`, 'err'); return; }
+  currentSlot = name; applyLoaded(saved);
+  try { await dbPut('current', name); } catch (e) {}
+  setStatus(`「${name}」を開いたよ`); renderSlots();
+};
+$('slotSaveAs').onclick = async () => {
+  const name = (prompt('保存する名前は？（例: 本番用、テスト、トレカ版）', '') || '').trim();
+  if (!name) return;
+  let names = []; try { names = await slotNames(); } catch (e) {}
+  if (names.includes(name) && name !== currentSlot && !confirm(`「${name}」はもうあるよ。上書きする？`)) return;
+  saveNow(name);
+};
+$('slotDelete').onclick = async () => {
+  const name = $('slots').value; if (!name) return;
+  if (!confirm(`「${name}」を消す？ 消したら元に戻せないよ`)) return;
+  try { await dbDel(SLOT + name); } catch (e) { setStatus('消せなかった', 'err'); return; }
+  if (name === currentSlot) { dirty = true; setStatus(`「${name}」を消したよ。画面の内容はまだ残っているから、いるなら「保存」か「別名で保存」してね`, 'dirty'); }
+  else setStatus(`「${name}」を消したよ`);
+  renderSlots();
+};
+// Ctrl+S でも保存
+document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveNow(); } });
+
+const drop = $('drop');
+['dragenter','dragover'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); if (t === 'drop' || e.target === document.documentElement) drop.classList.remove('over'); }));
+function isDummy() { return state.people.every(p => !p.img && /^さんかしゃ\d$/.test(p.name)); }
+document.addEventListener('drop', async e => {
+  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+  if (files.length && isDummy()) state.people = [];
+  for (const f of files) state.people.push({ name: f.name.replace(/\.[^.]+$/, ''), sub:'', team:'', img: await readImage(f, 500) });
+  update();
+});
+
+$('fetchIds').onclick = async () => {
+  const src = $('src').value;
+  const ids = $('ids').value.split(/\r?\n/).map(s => s.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?(x|twitter|twitch)\.(com|tv)\//, '').split(/[/?]/)[0]).filter(Boolean);
+  if (!ids.length) return;
+  if (isDummy()) state.people = [];
+  const msg = $('fetchMsg'), ng = [];
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i];
+    msg.textContent = `取ってきてるよ… ${i + 1} / ${ids.length}（${id}）`;
+    try {
+      const r = await fetch(`https://unavatar.io/${src}/${encodeURIComponent(id)}?fallback=false`);
+      if (r.status === 429) { ng.push(...ids.slice(i)); msg.textContent = ''; alert('今日の上限に来ちゃった。残りは明日か、画像を手で入れてね'); break; }
+      if (!r.ok) throw new Error(r.status);
+      const img = await readImage(await r.blob(), 500);
+      const old = state.people.find(p => p.xid === id);
+      if (old) old.img = img; else state.people.push({ name: id, sub: '', team: '', img, xid: id });
+      update();
+    } catch (e) { ng.push(id); }
+  }
+  msg.textContent = ng.length ? `取れなかった ID: ${ng.join(', ')}（つづりか、鍵アカかも）` : 'ぜんぶ取れたよ。名前は表示名に書きかえてね';
+  $('ids').value = ng.join('\n');
+};
+
+$('save').onclick = () => {
+  cv.toBlob(b => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = (state.title || '参加者紹介').replace(/[\\/:*?"<>|]/g, '_') + '.png';
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }, 'image/png');
+};
+
+renderList(); renderStyles();
+draw(); ensureFonts();
+if (demo) { setStatus('見本の表示中（保存しない）'); }
+else {
+  loadSaved().then(saved => {
+    if (saved) { applyLoaded(saved); setStatus(`「${currentSlot}」を読みこんだよ`); }
+    else setStatus('まだ保存していないよ');
+    renderSlots();
+  }).catch(() => setStatus('保存したデータを読めなかった', 'err'));
+}
+</script>
+</body>
+</html>
